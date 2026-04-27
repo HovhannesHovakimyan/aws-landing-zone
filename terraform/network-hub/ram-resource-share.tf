@@ -17,7 +17,6 @@ resource "aws_ram_resource_association" "tgw_association" {
 
 # Share Transit Gateway with AWS Organization
 resource "aws_ram_principal_association" "organization" {
-  # AWS Organization ARN for this landing zone (management account: hhmycompany, 621724235466)
-  principal          = "arn:aws:organizations::621724235466:organization/o-9gxtnqj9n4"
+  principal          = var.organization_arn
   resource_share_arn = aws_ram_resource_share.tgw_share.arn
 }

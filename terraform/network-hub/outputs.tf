@@ -48,5 +48,5 @@ output "resource_share_name" {
 
 output "organization_arn" {
   description = "Organization ARN with which Transit Gateway is shared"
-  value       = "arn:aws:organizations::621724235466:organization/o-9gxtnqj9n4"
+  value       = var.organization_arn
 }
