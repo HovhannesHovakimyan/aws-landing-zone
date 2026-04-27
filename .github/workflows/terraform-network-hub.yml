@@ -36,7 +36,7 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN_NETWORK_HUB }}
           aws-region: ${{ vars.AWS_REGION || env.AWS_REGION }}
 
       - name: Terraform Format Check

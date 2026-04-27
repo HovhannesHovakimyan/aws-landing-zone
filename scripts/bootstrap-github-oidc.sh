@@ -123,17 +123,17 @@ normalize_repo_identifier() {
   fi
 
   # Accept https://github.com/owner/repo(.git), git@github.com:owner/repo(.git), or owner/repo.
-  if [[ "$input" =~ ^https://github\.com/([^/]+)/([^/]+?)(\.git)?/?$ ]]; then
-    printf '%s/%s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+  if [[ "$input" =~ ^https://github\.com/([^/]+)/(.+)(\.git)?/?$ ]]; then
+    printf '%s/%s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]%.*}"
     return 0
   fi
 
-  if [[ "$input" =~ ^git@github\.com:([^/]+)/([^/]+?)(\.git)?$ ]]; then
-    printf '%s/%s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+  if [[ "$input" =~ ^git@github\.com:([^/]+)/(.+)(\.git)?$ ]]; then
+    printf '%s/%s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]%.*}"
     return 0
   fi
 
-  if [[ "$input" =~ ^[^/[:space:]]+/[^/[:space:]]+$ ]]; then
+  if [[ "$input" =~ ^[^/]+/[^/]+$ ]]; then
     printf '%s\n' "$input"
     return 0
   fi
