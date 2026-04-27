@@ -1,0 +1,11 @@
+region                  = "us-east-1"
+environment             = "production"
+hub_profile             = "network-hub-admin"
+spoke_profile           = "audit-admin"
+transit_gateway_id      = "tgw-0bce03b7b87987017"
+hub_spoke_route_table_id = "tgw-rtb-0c6f5fd1cd16fd084"
+spoke_vpc_id            = "vpc-xxxxxxxxxxxxxxxxx"
+spoke_subnet_ids        = ["subnet-aaaaaaaaaaaaaaaaa", "subnet-bbbbbbbbbbbbbbbbb"]
+spoke_route_table_ids   = ["rtb-aaaaaaaaaaaaaaaaa", "rtb-bbbbbbbbbbbbbbbbb"]
+destination_cidrs       = ["10.0.0.0/8", "172.16.0.0/12"]
+attachment_name         = "audit-to-hub-tgw"
