@@ -2,12 +2,11 @@ name: Terraform Aggregator Account
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - "terraform/aggregator-account/**"
-      - ".github/workflows/terraform-aggregator-account.yml"
+  workflow_run:
+    workflows:
+      - "Terraform Network Hub"
+    types:
+      - completed
 
 permissions:
   id-token: write
@@ -19,6 +18,7 @@ env:
 
 jobs:
   terraform:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,6 +27,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
@@ -52,5 +54,5 @@ jobs:
         run: terraform plan -out=tfplan
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
+        if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main') }}
         run: terraform apply -auto-approve tfplan
