@@ -157,6 +157,26 @@ You can override it with:
 
 - `SSO_ROLE_NAME=<RoleName>`
 
+## GitHub Actions ORG_ARN Prerequisite
+
+Set `ORG_ARN` in GitHub repository Variables or Secrets to the organization ARN of the same account where the workflow assumes `AWS_OIDC_ROLE_ARN`.
+
+Fetch the correct value from the target account context:
+
+1. Verify caller account:
+  - `aws sts get-caller-identity --profile network-hub-admin`
+2. Get organization ARN:
+  - `aws organizations describe-organization --profile network-hub-admin --query 'Organization.Arn' --output text`
+
+Expected ARN shape:
+
+- `arn:aws:organizations::<management-account-id>:organization/o-xxxxxxxxxx`
+
+Do not use these as `ORG_ARN`:
+
+- Root ARN (for example: `arn:aws:organizations::<id>:root/o-xxxx/r-xxxx`)
+- Account ARN (for example: `arn:aws:organizations::<id>:account/o-xxxx/<account-id>`)
+
 ## Step 1: Bootstrap Terraform Backend Buckets
 
 From the repository root:

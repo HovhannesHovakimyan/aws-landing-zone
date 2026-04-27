@@ -77,6 +77,25 @@ jobs:
             echo "::warning::ORG_ARN could not be parsed by debug step."
           fi
 
+      - name: Guard ORG_ARN matches caller organization
+        env:
+          ORG_ARN: ${{ vars.ORG_ARN || secrets.ORG_ARN }}
+        run: |
+          set -euo pipefail
+
+          CALLER_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+          ACTUAL_ORG_ARN=$(aws organizations describe-organization --query 'Organization.Arn' --output text)
+
+          if [[ "$ORG_ARN" != "$ACTUAL_ORG_ARN" ]]; then
+            echo "::error::ORG_ARN does not match the organization of the assumed AWS account."
+            echo "::error::Caller account: $CALLER_ACCOUNT_ID"
+            echo "::error::Provided ORG_ARN: $ORG_ARN"
+            echo "::error::Actual organization ARN for caller account: $ACTUAL_ORG_ARN"
+            exit 1
+          fi
+
+          echo "Caller account and ORG_ARN are consistent."
+
       - name: Terraform Plan
         run: terraform plan -out=tfplan -var "organization_arn=${{ vars.ORG_ARN || secrets.ORG_ARN }}"
 
