@@ -2,6 +2,10 @@
 # This allows the aggregator-account (and future spoke accounts) to access Terraform state
 # stored in the network-hub S3 bucket.
 
+data "aws_s3_bucket" "terraform_state" {
+  bucket = "terraform-network-hub-082787299790"
+}
+
 # Policy statement for spoke account OIDC role to access state files
 data "aws_iam_policy_document" "cross_account_s3_access" {
   statement {
@@ -23,7 +27,7 @@ data "aws_iam_policy_document" "cross_account_s3_access" {
     ]
 
     resources = [
-      "${aws_s3_bucket.terraform_state.arn}/terraform-*.tfstate",
+      "${data.aws_s3_bucket.terraform_state.arn}/terraform-*.tfstate",
     ]
   }
 
@@ -44,7 +48,7 @@ data "aws_iam_policy_document" "cross_account_s3_access" {
     ]
 
     resources = [
-      aws_s3_bucket.terraform_state.arn,
+      data.aws_s3_bucket.terraform_state.arn,
     ]
   }
 
@@ -65,12 +69,12 @@ data "aws_iam_policy_document" "cross_account_s3_access" {
     ]
 
     resources = [
-      "${aws_s3_bucket.terraform_state.arn}/.terraform.lock.hcl",
+      "${data.aws_s3_bucket.terraform_state.arn}/.terraform.lock.hcl",
     ]
   }
 }
 
 resource "aws_s3_bucket_policy" "cross_account_access" {
-  bucket = aws_s3_bucket.terraform_state.id
+  bucket = data.aws_s3_bucket.terraform_state.id
   policy = data.aws_iam_policy_document.cross_account_s3_access.json
 }
