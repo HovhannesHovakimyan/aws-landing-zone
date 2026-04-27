@@ -48,8 +48,37 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
+      - name: Validate ORG_ARN input
+        env:
+          ORG_ARN: ${{ vars.ORG_ARN || secrets.ORG_ARN }}
+        run: |
+          if [[ -z "$ORG_ARN" ]]; then
+            echo "::error::ORG_ARN is required. Set repository variable ORG_ARN or secret ORG_ARN to your AWS Organization ARN."
+            exit 1
+          fi
+
+          if [[ ! "$ORG_ARN" =~ ^arn:aws(-[a-z]+)?:organizations::[0-9]{12}:organization/o-[a-z0-9-]+$ ]]; then
+            echo "::error::ORG_ARN is invalid: '$ORG_ARN'"
+            echo "::error::Expected format: arn:aws:organizations::<management-account-id>:organization/o-xxxxxxxxxx"
+            exit 1
+          fi
+
+      - name: Debug ORG_ARN parts
+        if: ${{ vars.ENABLE_ORG_ARN_DEBUG == 'true' }}
+        env:
+          ORG_ARN: ${{ vars.ORG_ARN || secrets.ORG_ARN }}
+        run: |
+          if [[ "$ORG_ARN" =~ ^arn:aws(-[a-z]+)?:organizations::([0-9]{12}):organization/(o-[a-z0-9-]+)$ ]]; then
+            echo "ORG_ARN format check: OK"
+            echo "Management account id: ${BASH_REMATCH[2]}"
+            echo "Organization id: ${BASH_REMATCH[3]}"
+            echo "ARN preview: ${ORG_ARN:0:30}...${ORG_ARN: -8}"
+          else
+            echo "::warning::ORG_ARN could not be parsed by debug step."
+          fi
+
       - name: Terraform Plan
-        run: terraform plan -out=tfplan -var "organization_arn=${{ secrets.ORG_ARN }}"
+        run: terraform plan -out=tfplan -var "organization_arn=${{ vars.ORG_ARN || secrets.ORG_ARN }}"
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'

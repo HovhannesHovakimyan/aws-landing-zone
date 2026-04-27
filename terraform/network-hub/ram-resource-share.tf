@@ -17,6 +17,6 @@ resource "aws_ram_resource_association" "tgw_association" {
 
 # Share Transit Gateway with AWS Organization
 resource "aws_ram_principal_association" "organization" {
-  principal          = var.organization_arn
+  principal          = trimspace(var.organization_arn)
   resource_share_arn = aws_ram_resource_share.tgw_share.arn
 }
