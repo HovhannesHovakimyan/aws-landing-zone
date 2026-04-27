@@ -7,7 +7,7 @@ provider "aws" {
     tags = {
       ManagedBy   = "Terraform"
       Environment = var.environment
-      Stack       = "spoke-attachment"
+      Stack       = "aggregator-account"
       Scope       = "hub"
     }
   }
@@ -22,7 +22,8 @@ provider "aws" {
     tags = {
       ManagedBy   = "Terraform"
       Environment = var.environment
-      Stack       = "spoke-attachment"
+      Stack       = "aggregator-account"
+      AccountName = var.account_name
       Scope       = "spoke"
     }
   }

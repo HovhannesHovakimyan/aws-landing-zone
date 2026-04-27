@@ -6,8 +6,8 @@ on:
     branches:
       - main
     paths:
-      - "terraform/**/*.tf"
-      - ".github/workflows/terraform.yml"
+      - "terraform/network-hub/**"
+      - ".github/workflows/terraform-network-hub.yml"
 
 permissions:
   id-token: write
