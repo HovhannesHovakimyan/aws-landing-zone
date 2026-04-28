@@ -55,8 +55,8 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -input=false -var-file=terraform.tfvars.example -out=tfplan
+        run: terraform plan -input=false -lock-timeout=10m -var-file=terraform.tfvars.example -out=tfplan
 
       - name: Terraform Apply
         if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main') }}
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -lock-timeout=10m -auto-approve tfplan
