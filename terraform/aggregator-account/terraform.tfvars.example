@@ -1,21 +1,22 @@
-region      = "us-east-1"
-environment = "production"
+region      = "<SET_ME>"
+environment = "<SET_ME>"
+account_name = "<SET_ME>"
 
-# ── Account profiles ──────────────────────────────────────────────────────────
-hub_profile   = "network-hub-admin"
-spoke_profile = "audit-admin"
-account_name  = "Audit"
+# Optional for local runs only. Do not set in CI when using OIDC credentials.
+# hub_profile   = "<SET_ME>"
+# spoke_profile = "<SET_ME>"
 
-# ── Network-hub values (fixed — from network-hub stack outputs) ───────────────
-transit_gateway_id       = "tgw-0bce03b7b87987017"
-hub_spoke_route_table_id = "tgw-rtb-0c6f5fd1cd16fd084"
+# network-hub state location (used to fetch TGW IDs dynamically)
+network_hub_state_bucket = "<SET_ME>"
+network_hub_state_key    = "<SET_ME>"
+network_hub_state_region = "<SET_ME>"
 
-# ── Spoke VPC ─────────────────────────────────────────────────────────────────
-vpc_name         = "audit-spoke-vpc"
-vpc_cidr         = "10.1.0.0/16"
-tgw_subnet_cidrs = ["10.1.0.0/28", "10.1.0.16/28"]
-tgw_subnet_azs   = ["us-east-1a", "us-east-1b"]
+# Spoke VPC
+vpc_name         = "<SET_ME>"
+vpc_cidr         = "<SET_ME>"
+tgw_subnet_cidrs = ["<SET_ME>", "<SET_ME>"]
+tgw_subnet_azs   = ["<SET_ME>", "<SET_ME>"]
 
-# ── TGW Attachment ────────────────────────────────────────────────────────────
-attachment_name   = "audit-to-hub-tgw"
-destination_cidrs = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+# TGW attachment
+attachment_name   = "<SET_ME>"
+destination_cidrs = ["<SET_ME>", "<SET_ME>"]

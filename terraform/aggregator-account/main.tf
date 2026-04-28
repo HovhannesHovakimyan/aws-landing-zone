@@ -1,7 +1,18 @@
 locals {
+  network_hub_state = data.terraform_remote_state.network_hub.outputs
+
   spoke_routes = {
     for cidr in var.destination_cidrs :
     replace(cidr, "/", "-") => cidr
+  }
+}
+
+data "terraform_remote_state" "network_hub" {
+  backend = "s3"
+  config = {
+    bucket = var.network_hub_state_bucket
+    key    = var.network_hub_state_key
+    region = var.network_hub_state_region
   }
 }
 
@@ -52,7 +63,7 @@ resource "aws_route_table_association" "tgw" {
 resource "aws_ec2_transit_gateway_vpc_attachment" "spoke" {
   provider           = aws.spoke
   subnet_ids         = aws_subnet.tgw[*].id
-  transit_gateway_id = var.transit_gateway_id
+  transit_gateway_id = local.network_hub_state.transit_gateway_id
   vpc_id             = aws_vpc.spoke.id
   dns_support        = "enable"
 
@@ -64,13 +75,13 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "spoke" {
 resource "aws_ec2_transit_gateway_route_table_association" "spoke" {
   provider                       = aws.hub
   transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.spoke.id
-  transit_gateway_route_table_id = var.hub_spoke_route_table_id
+  transit_gateway_route_table_id = local.network_hub_state.transit_gateway_spoke_route_table_id
 }
 
 resource "aws_ec2_transit_gateway_route_table_propagation" "spoke" {
   provider                       = aws.hub
   transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.spoke.id
-  transit_gateway_route_table_id = var.hub_spoke_route_table_id
+  transit_gateway_route_table_id = local.network_hub_state.transit_gateway_spoke_route_table_id
 }
 
 # Add routes in the spoke route table so traffic destined for other accounts
@@ -80,5 +91,5 @@ resource "aws_route" "spoke_to_tgw" {
   for_each               = local.spoke_routes
   route_table_id         = aws_route_table.tgw.id
   destination_cidr_block = each.value
-  transit_gateway_id     = var.transit_gateway_id
+  transit_gateway_id     = local.network_hub_state.transit_gateway_id
 }

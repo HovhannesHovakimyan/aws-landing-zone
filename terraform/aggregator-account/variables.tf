@@ -17,11 +17,15 @@ variable "environment" {
 variable "hub_profile" {
   description = "AWS CLI profile for the Network-hub account"
   type        = string
+  default     = null
+  nullable    = true
 }
 
 variable "spoke_profile" {
   description = "AWS CLI profile for the spoke account"
   type        = string
+  default     = null
+  nullable    = true
 }
 
 variable "account_name" {
@@ -29,15 +33,20 @@ variable "account_name" {
   type        = string
 }
 
-# ── Network-hub inputs ────────────────────────────────────────────────────────
+# ── Network-hub remote state inputs ──────────────────────────────────────────
 
-variable "transit_gateway_id" {
-  description = "Transit Gateway ID from the network-hub stack"
+variable "network_hub_state_bucket" {
+  description = "S3 bucket containing the network-hub Terraform state"
   type        = string
 }
 
-variable "hub_spoke_route_table_id" {
-  description = "TGW route table ID used for spoke associations (from network-hub stack)"
+variable "network_hub_state_key" {
+  description = "S3 key for the network-hub Terraform state object"
+  type        = string
+}
+
+variable "network_hub_state_region" {
+  description = "AWS region for the network-hub Terraform state bucket"
   type        = string
 }
 
