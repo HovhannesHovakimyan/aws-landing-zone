@@ -1,22 +1,18 @@
-# Cross-account S3 access policy for spoke accounts to read/write state files
-# This allows the aggregator-account (and future spoke accounts) to access Terraform state
-# stored in the network-hub S3 bucket.
+# Cross-account S3 access policy for the aggregator account role to manage shared Terraform state.
 
 data "aws_s3_bucket" "terraform_state" {
   bucket = "terraform-network-hub-082787299790"
 }
 
-# Policy statement for spoke account OIDC role to access state files
 data "aws_iam_policy_document" "cross_account_s3_access" {
   statement {
-    sid    = "AllowSpokesReadWriteState"
+    sid    = "AllowAggregatorReadWriteState"
     effect = "Allow"
 
     principals {
       type = "AWS"
       identifiers = [
-        "arn:aws:iam::612827969911:role/GitHubAction-Terraform-Role", # audit account (aggregator)
-        # Add more spoke account OIDC role ARNs here as you add more spokes
+        "arn:aws:iam::334296258026:role/GitHubAction-Terraform-Role", # Aggregator account OIDC role used by terraform-aggregator-account workflow
       ]
     }
 
@@ -32,13 +28,13 @@ data "aws_iam_policy_document" "cross_account_s3_access" {
   }
 
   statement {
-    sid    = "AllowSpokesListBucket"
+    sid    = "AllowAggregatorListBucket"
     effect = "Allow"
 
     principals {
       type = "AWS"
       identifiers = [
-        "arn:aws:iam::612827969911:role/GitHubAction-Terraform-Role",
+        "arn:aws:iam::334296258026:role/GitHubAction-Terraform-Role", # Aggregator account OIDC role used by terraform-aggregator-account workflow
       ]
     }
 
@@ -53,13 +49,13 @@ data "aws_iam_policy_document" "cross_account_s3_access" {
   }
 
   statement {
-    sid    = "AllowSpokesStateLocking"
+    sid    = "AllowAggregatorStateLocking"
     effect = "Allow"
 
     principals {
       type = "AWS"
       identifiers = [
-        "arn:aws:iam::612827969911:role/GitHubAction-Terraform-Role",
+        "arn:aws:iam::334296258026:role/GitHubAction-Terraform-Role", # Aggregator account OIDC role used by terraform-aggregator-account workflow
       ]
     }
 
