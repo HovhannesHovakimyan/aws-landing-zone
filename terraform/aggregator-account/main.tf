@@ -81,4 +81,6 @@ resource "aws_route" "spoke_to_tgw" {
   route_table_id         = aws_route_table.tgw.id
   destination_cidr_block = each.value
   transit_gateway_id     = local.network_hub_state.transit_gateway_id
+
+  depends_on = [aws_ec2_transit_gateway_vpc_attachment.spoke]
 }
