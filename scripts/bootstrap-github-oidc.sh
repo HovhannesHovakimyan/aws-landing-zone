@@ -123,17 +123,17 @@ normalize_repo_identifier() {
   fi
 
   # Accept https://github.com/owner/repo(.git), git@github.com:owner/repo(.git), or owner/repo.
-  if [[ "$input" =~ ^https://github\.com/([^/]+)/(.+)(\.git)?/?$ ]]; then
-    printf '%s/%s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]%.*}"
-    return 0
+  # Normalize to owner/repo and strip trailing slash or .git suffix.
+  if [[ "$input" =~ ^https://github\.com/.+ ]]; then
+    input="${input#https://github.com/}"
+  elif [[ "$input" =~ ^git@github\.com:.+ ]]; then
+    input="${input#git@github.com:}"
   fi
 
-  if [[ "$input" =~ ^git@github\.com:([^/]+)/(.+)(\.git)?$ ]]; then
-    printf '%s/%s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]%.*}"
-    return 0
-  fi
+  input="${input%/}"
+  input="${input%.git}"
 
-  if [[ "$input" =~ ^[^/]+/[^/]+$ ]]; then
+  if [[ "$input" =~ ^[^/[:space:]]+/[^/[:space:]]+$ ]]; then
     printf '%s\n' "$input"
     return 0
   fi
