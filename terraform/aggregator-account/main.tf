@@ -72,20 +72,9 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "spoke" {
   }
 }
 
-resource "aws_ec2_transit_gateway_route_table_association" "spoke" {
-  provider                       = aws.hub
-  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.spoke.id
-  transit_gateway_route_table_id = local.network_hub_state.transit_gateway_spoke_route_table_id
-}
-
-resource "aws_ec2_transit_gateway_route_table_propagation" "spoke" {
-  provider                       = aws.hub
-  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.spoke.id
-  transit_gateway_route_table_id = local.network_hub_state.transit_gateway_spoke_route_table_id
-}
-
-# Add routes in the spoke route table so traffic destined for other accounts
-# is forwarded through the TGW
+# Association/propagation for shared TGW route tables is managed by the TGW
+# owner account (network-hub). Spoke account workflow creates only attachment
+# and local VPC routes to the shared TGW.
 resource "aws_route" "spoke_to_tgw" {
   provider               = aws.spoke
   for_each               = local.spoke_routes

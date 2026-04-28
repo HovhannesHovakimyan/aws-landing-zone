@@ -15,7 +15,7 @@ variable "environment" {
 # ── Account profiles ──────────────────────────────────────────────────────────
 
 variable "hub_profile" {
-  description = "AWS CLI profile for the Network-hub account"
+  description = "Optional AWS CLI profile for network-hub account (kept for compatibility)"
   type        = string
   default     = null
   nullable    = true
