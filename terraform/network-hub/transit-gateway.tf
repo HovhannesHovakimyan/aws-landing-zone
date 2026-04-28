@@ -4,6 +4,7 @@ resource "aws_ec2_transit_gateway" "hub" {
   amazon_side_asn                 = 64512
   default_route_table_association = "enable"
   default_route_table_propagation = "enable"
+  auto_accept_shared_attachments  = "enable"
   dns_support                     = "enable"
   vpn_ecmp_support                = "enable"
   transit_gateway_cidr_blocks     = []
