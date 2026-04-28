@@ -15,18 +15,6 @@ permissions:
 env:
   TF_IN_AUTOMATION: true
   AWS_REGION: us-east-1
-  TF_VAR_region: ${{ vars.AGG_REGION }}
-  TF_VAR_environment: ${{ vars.AGG_ENVIRONMENT }}
-  TF_VAR_account_name: ${{ vars.AGG_ACCOUNT_NAME }}
-  TF_VAR_network_hub_state_bucket: ${{ vars.AGG_NETWORK_HUB_STATE_BUCKET }}
-  TF_VAR_network_hub_state_key: ${{ vars.AGG_NETWORK_HUB_STATE_KEY }}
-  TF_VAR_network_hub_state_region: ${{ vars.AGG_NETWORK_HUB_STATE_REGION }}
-  TF_VAR_vpc_name: ${{ vars.AGG_VPC_NAME }}
-  TF_VAR_vpc_cidr: ${{ vars.AGG_VPC_CIDR }}
-  TF_VAR_tgw_subnet_cidrs: ${{ vars.AGG_TGW_SUBNET_CIDRS_JSON }}
-  TF_VAR_tgw_subnet_azs: ${{ vars.AGG_TGW_SUBNET_AZS_JSON }}
-  TF_VAR_attachment_name: ${{ vars.AGG_ATTACHMENT_NAME }}
-  TF_VAR_destination_cidrs: ${{ vars.AGG_DESTINATION_CIDRS_JSON }}
 
 concurrency:
   group: terraform-aggregator-account
@@ -45,32 +33,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
-      - name: Validate required dynamic inputs
-        run: |
-          set -euo pipefail
-
-          required=(
-            TF_VAR_region
-            TF_VAR_environment
-            TF_VAR_account_name
-            TF_VAR_network_hub_state_bucket
-            TF_VAR_network_hub_state_key
-            TF_VAR_network_hub_state_region
-            TF_VAR_vpc_name
-            TF_VAR_vpc_cidr
-            TF_VAR_tgw_subnet_cidrs
-            TF_VAR_tgw_subnet_azs
-            TF_VAR_attachment_name
-            TF_VAR_destination_cidrs
-          )
-
-          for var_name in "${required[@]}"; do
-            if [[ -z "${!var_name:-}" ]]; then
-              echo "::error::Missing required GitHub variable for $var_name"
-              exit 1
-            fi
-          done
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
@@ -93,7 +55,7 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -input=false -out=tfplan
+        run: terraform plan -input=false -var-file=terraform.tfvars.example -out=tfplan
 
       - name: Terraform Apply
         if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main') }}
