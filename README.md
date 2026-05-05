@@ -66,7 +66,7 @@ Use this runbook when setting up the foundation environment for hhmycompany in u
 1. Accept the AWS IAM Identity Center invitation email and complete password setup.
 2. In IAM Identity Center, assign the operator to the Network-hub account with AdministratorAccess.
 3. Configure local SSO profile:
-  - Run aws configure sso.
+  - Run `aws configure sso`.
   - SSO region: us-east-1.
   - Select account: Network-hub.
   - Profile name: network-hub-admin.
@@ -80,7 +80,8 @@ Run this command and confirm the returned account is the Network-hub account:
 ## Terraform Backend and OIDC Bootstrap Scripts
 
 - `scripts/bootstrap-terraform-backend.sh`
-  - Creates or updates Terraform backend buckets in target accounts
+  - Creates or updates a Terraform state S3 bucket per account and generates matching Terraform files
+  - **Recommended usage:** run this script for the Network-hub account only; spoke accounts should reuse the same Network-hub bucket with manually created Terraform files
   - Applies S3 hardening (versioning, encryption, public access block, ownership controls)
   - Applies bucket tags
   - Generates Terraform files per account in `terraform/<account-name>/`
@@ -179,24 +180,23 @@ Do not use these as `ORG_ARN`:
 
 ## Step 1: Bootstrap Terraform Backend Buckets
 
-From the repository root:
+Run this script **for the Network-hub account only**:
 
 - `./scripts/bootstrap-terraform-backend.sh --include "Network-hub" --sso-session my-sso-session`
 
-Or all assigned accounts:
+The script can target multiple accounts if needed, but in most cases this is not recommended:
 
 - `./scripts/bootstrap-terraform-backend.sh --all --sso-session my-sso-session`
-
-Or all except some:
-
 - `./scripts/bootstrap-terraform-backend.sh --all --exclude "Sandbox" --sso-session my-sso-session`
 
-What happens per account:
+What happens:
 
-- Bucket name format: `terraform-<account-name>-<account-id>`
-- State key format: `terraform-<account-name>.tfstate`
-- Terraform files generated in: `terraform/<account-name>/`
+- An S3 bucket is created in the Network-hub account for Terraform state
+- Bucket name format: `terraform-network-hub-<account-id>`
+- Terraform files are generated in: `terraform/network-hub/`
 - AWS provider version in generated Terraform: `~> 6.0`
+
+For spoke accounts (Aggregator, Audit, etc.), **do not run this script**. Instead, manually create the Terraform files for each spoke under `terraform/<stack-name>/`, pointing their `backend.tf` to the same Network-hub bucket with a unique state key (for example `terraform-aggregator-account.tfstate`).
 
 Default output location:
 
