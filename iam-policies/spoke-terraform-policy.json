@@ -1,0 +1,61 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "StateBackendS3",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::terraform-network-hub-*",
+        "arn:aws:s3:::terraform-network-hub-*/*"
+      ]
+    },
+    {
+      "Sid": "SpokeVpcAndAttachment",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateVpc",
+        "ec2:DeleteVpc",
+        "ec2:ModifyVpcAttribute",
+        "ec2:CreateSubnet",
+        "ec2:DeleteSubnet",
+        "ec2:ModifySubnetAttribute",
+        "ec2:CreateRouteTable",
+        "ec2:DeleteRouteTable",
+        "ec2:AssociateRouteTable",
+        "ec2:DisassociateRouteTable",
+        "ec2:CreateRoute",
+        "ec2:ReplaceRoute",
+        "ec2:DeleteRoute",
+        "ec2:CreateTransitGatewayVpcAttachment",
+        "ec2:DeleteTransitGatewayVpcAttachment",
+        "ec2:ModifyTransitGatewayVpcAttachment",
+        "ec2:CreateTags",
+        "ec2:DeleteTags",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeRouteTables",
+        "ec2:DescribeRoutes",
+        "ec2:DescribeTransitGatewayVpcAttachments",
+        "ec2:DescribeTransitGateways",
+        "ec2:DescribeAvailabilityZones",
+        "ec2:DescribeTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "IdentityRead",
+      "Effect": "Allow",
+      "Action": [
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

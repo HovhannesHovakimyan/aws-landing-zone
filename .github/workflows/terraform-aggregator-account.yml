@@ -2,11 +2,16 @@ name: Terraform Aggregator Account
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows:
-      - "Terraform Network Hub"
-    types:
-      - completed
+  pull_request:
+    paths:
+      - "terraform/aggregator-account/**"
+      - ".github/workflows/terraform-aggregator-account.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform/aggregator-account/**"
+      - ".github/workflows/terraform-aggregator-account.yml"
 
 permissions:
   id-token: write
@@ -21,8 +26,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  terraform:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
+  terraform-plan:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,8 +35,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
@@ -57,6 +59,47 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -input=false -lock-timeout=10m -var-file=terraform.tfvars.example -out=tfplan
 
+      - name: Upload plan artifact
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: aggregator-account-tfplan
+          path: terraform/aggregator-account/tfplan
+          if-no-files-found: error
+
+  terraform-apply:
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    environment:
+      name: aggregator-prod
+    defaults:
+      run:
+        working-directory: terraform/aggregator-account
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.14.9
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN_AGGREGATOR }}
+          aws-region: ${{ vars.AWS_REGION || env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init -reconfigure
+
+      - name: Download plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: aggregator-account-tfplan
+          path: terraform/aggregator-account
+
       - name: Terraform Apply
-        if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main') }}
         run: terraform apply -lock-timeout=10m -auto-approve tfplan

@@ -1,0 +1,75 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "StateBackendS3",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::terraform-network-hub-*",
+        "arn:aws:s3:::terraform-network-hub-*/*"
+      ]
+    },
+    {
+      "Sid": "TransitGatewayAndRouteTables",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateTransitGateway",
+        "ec2:DeleteTransitGateway",
+        "ec2:ModifyTransitGateway",
+        "ec2:CreateTransitGatewayRouteTable",
+        "ec2:DeleteTransitGatewayRouteTable",
+        "ec2:CreateTags",
+        "ec2:DeleteTags",
+        "ec2:DescribeTransitGateways",
+        "ec2:DescribeTransitGatewayRouteTables",
+        "ec2:DescribeTransitGatewayAttachments",
+        "ec2:DescribeTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "RamShareForTransitGateway",
+      "Effect": "Allow",
+      "Action": [
+        "ram:CreateResourceShare",
+        "ram:DeleteResourceShare",
+        "ram:UpdateResourceShare",
+        "ram:TagResource",
+        "ram:UntagResource",
+        "ram:GetResourceShares",
+        "ram:GetResourceShareAssociations",
+        "ram:AssociateResourceShare",
+        "ram:DisassociateResourceShare",
+        "ram:AssociateResourceSharePermission",
+        "ram:DisassociateResourceSharePermission",
+        "ram:EnableSharingWithAwsOrganization",
+        "ram:ListResources",
+        "ram:ListPrincipals"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "OrganizationsReadForValidation",
+      "Effect": "Allow",
+      "Action": [
+        "organizations:DescribeOrganization"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "IdentityRead",
+      "Effect": "Allow",
+      "Action": [
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

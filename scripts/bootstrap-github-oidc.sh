@@ -56,7 +56,6 @@ set -euo pipefail
 #                      Default: AWSAdministratorAccess
 #   SSO_USE_DEVICE_CODE Use device-code login flow for aws sso login.
 #                      Default: true
-
 ROLE_NAME="GitHubAction-Terraform-Role"
 REPO_INPUT="${GITHUB_REPO:-}"
 REPO=""

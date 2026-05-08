@@ -2,6 +2,10 @@ name: Terraform Network Hub
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "terraform/network-hub/**"
+      - ".github/workflows/terraform-network-hub.yml"
   push:
     branches:
       - main
@@ -18,7 +22,7 @@ env:
   AWS_REGION: us-east-1
 
 jobs:
-  terraform:
+  terraform-plan:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -99,6 +103,47 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -out=tfplan -var "organization_arn=${{ vars.ORG_ARN || secrets.ORG_ARN }}"
 
+      - name: Upload plan artifact
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: network-hub-tfplan
+          path: terraform/network-hub/tfplan
+          if-no-files-found: error
+
+  terraform-apply:
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    environment:
+      name: network-hub-prod
+    defaults:
+      run:
+        working-directory: terraform/network-hub
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.14.9
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN_NETWORK_HUB }}
+          aws-region: ${{ vars.AWS_REGION || env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init -reconfigure
+
+      - name: Download plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: network-hub-tfplan
+          path: terraform/network-hub
+
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve tfplan
