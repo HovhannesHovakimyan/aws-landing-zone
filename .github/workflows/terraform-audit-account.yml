@@ -1,0 +1,105 @@
+name: Terraform Audit Account
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "terraform/audit-account/**"
+      - ".github/workflows/terraform-audit-account.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform/audit-account/**"
+      - ".github/workflows/terraform-audit-account.yml"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_IN_AUTOMATION: true
+  AWS_REGION: us-east-1
+
+concurrency:
+  group: terraform-audit-account
+  cancel-in-progress: false
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/audit-account
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.14.9
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN_AUDIT }}
+          aws-region: ${{ vars.AWS_REGION || env.AWS_REGION }}
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init -reconfigure
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -input=false -lock-timeout=10m -var-file=terraform.tfvars.example -out=tfplan
+
+      - name: Upload plan artifact
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-account-tfplan
+          path: terraform/audit-account/tfplan
+          if-no-files-found: error
+
+  terraform-apply:
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    environment:
+      name: audit-prod
+    defaults:
+      run:
+        working-directory: terraform/audit-account
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.14.9
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN_AUDIT }}
+          aws-region: ${{ vars.AWS_REGION || env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init -reconfigure
+
+      - name: Download plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: audit-account-tfplan
+          path: terraform/audit-account
+
+      - name: Terraform Apply
+        run: terraform apply -lock-timeout=10m -auto-approve tfplan
