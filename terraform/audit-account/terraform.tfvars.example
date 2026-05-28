@@ -1,0 +1,21 @@
+region       = "us-east-1"
+environment  = "production"
+account_name = "Audit"
+
+# Optional for local runs only. Do not set in CI when using OIDC credentials.
+# spoke_profile = "audit-admin"
+
+# network-hub state location (used to fetch TGW IDs dynamically)
+network_hub_state_bucket = "terraform-network-hub-082787299790"
+network_hub_state_key    = "terraform-network-hub.tfstate"
+network_hub_state_region = "us-east-1"
+
+# Spoke VPC
+vpc_name         = "audit-spoke-vpc"
+vpc_cidr         = "10.2.0.0/16"
+tgw_subnet_cidrs = ["10.2.0.0/28", "10.2.0.16/28"]
+tgw_subnet_azs   = ["us-east-1a", "us-east-1b"]
+
+# TGW attachment
+attachment_name   = "audit-to-hub-tgw"
+destination_cidrs = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
