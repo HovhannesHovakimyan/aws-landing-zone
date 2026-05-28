@@ -1,19 +1,33 @@
-# Cross-account S3 access policy for the aggregator account role to manage shared Terraform state.
+# Cross-account S3 access policy for spoke Terraform OIDC roles to manage shared Terraform state.
 
 data "aws_s3_bucket" "terraform_state" {
   bucket = "terraform-network-hub-082787299790"
 }
 
+locals {
+  organization_id = element(split("/", var.organization_arn), 1)
+}
+
 data "aws_iam_policy_document" "cross_account_s3_access" {
   statement {
-    sid    = "AllowAggregatorReadWriteState"
+    sid    = "AllowSpokeReadWriteState"
     effect = "Allow"
 
     principals {
-      type = "AWS"
-      identifiers = [
-        "arn:aws:iam::334296258026:role/GitHubAction-Terraform-Role", # Aggregator account OIDC role used by terraform-aggregator-account workflow
-      ]
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:PrincipalOrgID"
+      values   = [local.organization_id]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "aws:PrincipalArn"
+      values   = ["arn:aws:iam::*:role/GitHubAction-Terraform-Role"]
     }
 
     actions = [
@@ -28,14 +42,24 @@ data "aws_iam_policy_document" "cross_account_s3_access" {
   }
 
   statement {
-    sid    = "AllowAggregatorListBucket"
+    sid    = "AllowSpokeListBucket"
     effect = "Allow"
 
     principals {
-      type = "AWS"
-      identifiers = [
-        "arn:aws:iam::334296258026:role/GitHubAction-Terraform-Role", # Aggregator account OIDC role used by terraform-aggregator-account workflow
-      ]
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:PrincipalOrgID"
+      values   = [local.organization_id]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "aws:PrincipalArn"
+      values   = ["arn:aws:iam::*:role/GitHubAction-Terraform-Role"]
     }
 
     actions = [
@@ -49,14 +73,24 @@ data "aws_iam_policy_document" "cross_account_s3_access" {
   }
 
   statement {
-    sid    = "AllowAggregatorStateLocking"
+    sid    = "AllowSpokeStateLocking"
     effect = "Allow"
 
     principals {
-      type = "AWS"
-      identifiers = [
-        "arn:aws:iam::334296258026:role/GitHubAction-Terraform-Role", # Aggregator account OIDC role used by terraform-aggregator-account workflow
-      ]
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:PrincipalOrgID"
+      values   = [local.organization_id]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "aws:PrincipalArn"
+      values   = ["arn:aws:iam::*:role/GitHubAction-Terraform-Role"]
     }
 
     actions = [
