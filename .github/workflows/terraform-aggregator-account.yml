@@ -15,6 +15,10 @@ on:
       - ".github/workflows/terraform-aggregator-account.yml"
       - ".github/workflows/terraform-spoke-template.yml"
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   terraform:
     uses: ./.github/workflows/terraform-spoke-template.yml
