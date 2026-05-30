@@ -19,3 +19,6 @@ tgw_subnet_azs   = ["us-east-1a", "us-east-1b"]
 # TGW attachment
 attachment_name   = "aggregator-to-hub-tgw"
 destination_cidrs = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+
+# App-tier subnets (for test instances)
+app_subnet_cidrs = ["10.1.1.0/24", "10.1.2.0/24"]
