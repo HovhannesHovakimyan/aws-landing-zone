@@ -16,6 +16,17 @@ resource "aws_subnet" "app" {
   }
 }
 
+# ── Internet Gateway ─────────────────────────────────────────────────────────
+
+resource "aws_internet_gateway" "spoke" {
+  provider = aws.spoke
+  vpc_id   = aws_vpc.spoke.id
+
+  tags = {
+    Name = "${var.vpc_name}-igw"
+  }
+}
+
 # ── Route table for app-tier subnets ──────────────────────────────────────────
 
 resource "aws_route_table" "app" {
@@ -32,6 +43,14 @@ resource "aws_route_table_association" "app" {
   count          = 2
   subnet_id      = aws_subnet.app[count.index].id
   route_table_id = aws_route_table.app.id
+}
+
+# Default route via IGW for internet access (SSM connectivity)
+resource "aws_route" "app_to_internet" {
+  provider               = aws.spoke
+  route_table_id         = aws_route_table.app.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.spoke.id
 }
 
 # Routes from app tier to TGW for cross-spoke traffic
