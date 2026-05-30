@@ -20,11 +20,6 @@ output "transit_gateway_owner_id" {
 }
 
 # Transit Gateway Route Table Outputs
-output "transit_gateway_default_route_table_id" {
-  description = "ID of the default Transit Gateway route table"
-  value       = aws_ec2_transit_gateway_route_table.default.id
-}
-
 output "transit_gateway_spoke_route_table_id" {
   description = "ID of the spoke Transit Gateway route table"
   value       = aws_ec2_transit_gateway_route_table.spoke.id

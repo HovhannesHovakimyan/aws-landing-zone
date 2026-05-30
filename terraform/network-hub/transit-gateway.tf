@@ -2,8 +2,8 @@
 resource "aws_ec2_transit_gateway" "hub" {
   description                     = "Transit Gateway for Hub-and-Spoke network architecture"
   amazon_side_asn                 = 64512
-  default_route_table_association = "enable"
-  default_route_table_propagation = "enable"
+  default_route_table_association = "disable"
+  default_route_table_propagation = "disable"
   auto_accept_shared_attachments  = "enable"
   dns_support                     = "enable"
   vpn_ecmp_support                = "enable"
@@ -12,15 +12,6 @@ resource "aws_ec2_transit_gateway" "hub" {
   tags = {
     Name        = "hub-transit-gateway"
     Description = "Primary Transit Gateway for hub-and-spoke architecture"
-  }
-}
-
-# Transit Gateway Route Table (Default)
-resource "aws_ec2_transit_gateway_route_table" "default" {
-  transit_gateway_id = aws_ec2_transit_gateway.hub.id
-
-  tags = {
-    Name = "hub-default-route-table"
   }
 }
 
