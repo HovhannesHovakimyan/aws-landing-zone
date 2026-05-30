@@ -18,7 +18,7 @@ resource "aws_ec2_tag" "aggregator_attachment_name" {
   resource_id = data.terraform_remote_state.aggregator.outputs.transit_gateway_attachment_id
   key         = "Name"
   # IMPORTANT: Must match var.attachment_name in terraform/aggregator-account/variables.tf
-  value       = "aggregator-to-hub-tgw"
+  value = "aggregator-to-hub-tgw"
 }
 
 # ── Audit spoke ───────────────────────────────────────────────────────────────
@@ -37,5 +37,5 @@ resource "aws_ec2_tag" "audit_attachment_name" {
   resource_id = data.terraform_remote_state.audit.outputs.transit_gateway_attachment_id
   key         = "Name"
   # IMPORTANT: Must match var.attachment_name in terraform/audit-account/variables.tf
-  value       = "audit-to-hub-tgw"
+  value = "audit-to-hub-tgw"
 }
