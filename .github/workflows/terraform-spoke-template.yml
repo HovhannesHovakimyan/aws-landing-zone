@@ -1,0 +1,132 @@
+name: Terraform Spoke Template
+
+on:
+  workflow_call:
+    inputs:
+      spoke_name:
+        description: Human-readable spoke label used in job names
+        required: true
+        type: string
+      working_directory:
+        description: Terraform working directory for this spoke
+        required: true
+        type: string
+      artifact_name:
+        description: Artifact name used to upload/download tfplan
+        required: true
+        type: string
+      apply_environment:
+        description: GitHub environment name used by terraform-apply
+        required: true
+        type: string
+      concurrency_group:
+        description: Concurrency group for this spoke workflow
+        required: true
+        type: string
+      terraform_version:
+        description: Terraform version used by setup-terraform
+        required: false
+        default: "1.14.9"
+        type: string
+      aws_region:
+        description: AWS region for Terraform and AWS credential configuration
+        required: false
+        default: "us-east-1"
+        type: string
+    secrets:
+      role_to_assume:
+        description: AWS IAM role ARN for OIDC authentication
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_IN_AUTOMATION: true
+  AWS_REGION: ${{ inputs.aws_region }}
+
+concurrency:
+  group: ${{ inputs.concurrency_group }}
+  cancel-in-progress: false
+
+jobs:
+  terraform-plan:
+    name: Terraform Plan (${{ inputs.spoke_name }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working_directory }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.role_to_assume }}
+          aws-region: ${{ vars.AWS_REGION || env.AWS_REGION }}
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init -reconfigure
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -input=false -lock-timeout=10m -var-file=terraform.tfvars.example -out=tfplan
+
+      - name: Upload plan artifact
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ inputs.working_directory }}/tfplan
+          if-no-files-found: error
+
+  terraform-apply:
+    name: Terraform Apply (${{ inputs.spoke_name }})
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.apply_environment }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.working_directory }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.role_to_assume }}
+          aws-region: ${{ vars.AWS_REGION || env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init -reconfigure
+
+      - name: Download plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ inputs.working_directory }}
+
+      - name: Terraform Apply
+        run: terraform apply -lock-timeout=10m -auto-approve tfplan
