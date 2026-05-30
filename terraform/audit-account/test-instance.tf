@@ -107,9 +107,9 @@ resource "aws_iam_role" "test_instance" {
 }
 
 resource "aws_iam_role_policy_attachment" "test_instance_ssm" {
-  provider       = aws.spoke
-  role           = aws_iam_role.test_instance.name
-  policy_arn     = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  provider   = aws.spoke
+  role       = aws_iam_role.test_instance.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_instance_profile" "test_instance" {

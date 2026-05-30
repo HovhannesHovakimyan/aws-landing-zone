@@ -101,3 +101,15 @@ variable "attachment_name" {
   type        = string
   default     = "aggregator-to-hub-tgw"
 }
+
+# ── App-tier subnets ─────────────────────────────────────────────────────────
+
+variable "app_subnet_cidrs" {
+  description = "CIDR blocks for the two app-tier subnets (one per AZ)"
+  type        = list(string)
+  default     = ["10.1.1.0/24", "10.1.2.0/24"]
+  validation {
+    condition     = length(var.app_subnet_cidrs) == 2
+    error_message = "Exactly two app subnet CIDRs must be provided for HA across two AZs."
+  }
+}
