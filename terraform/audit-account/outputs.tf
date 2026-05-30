@@ -27,3 +27,8 @@ output "transit_gateway_attachment_arn" {
   description = "Transit Gateway attachment ARN"
   value       = aws_ec2_transit_gateway_vpc_attachment.spoke.arn
 }
+
+output "transit_gateway_attachment_name" {
+  description = "Name tag of the TGW attachment (single source of truth for hub-side tagging)"
+  value       = var.attachment_name
+}
