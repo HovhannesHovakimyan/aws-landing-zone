@@ -286,3 +286,392 @@ Only run these commands after completing the foundation phases above.
 3. `chmod +x scripts/bootstrap-terraform-backend.sh scripts/bootstrap-github-oidc.sh`
 4. `./scripts/bootstrap-terraform-backend.sh --include "Network-hub" --sso-session my-sso-session`
 5. `./scripts/bootstrap-github-oidc.sh --include "Network-hub" --sso-session my-sso-session --repo-url <owner>/<repo>`
+
+---
+
+# Hub-and-Spoke Network Architecture
+
+This section documents the Transit Gateway (TGW) hub-and-spoke network topology that enables secure, low-latency connectivity across AWS accounts in the landing zone.
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Network Hub Account                      │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │ VPC: <hub-vpc-cidr>                                    │ │
+│  │  ├─ Subnets: <hub-subnet-cidrs>                        │ │
+│  │  └─ NAT Gateways for outbound traffic                  │ │
+│  │                                                         │ │
+│  │ ┌─────────────────────────────────────────────────────┤ │
+│  │ │ Transit Gateway (TGW)                               │ │
+│  │ │  • Default route table association: DISABLED        │ │
+│  │ │  • Default route table propagation: DISABLED        │ │
+│  │ │  • Explicit spoke route table                       │ │
+│  │ │  • Shared with AWS Organization via RAM             │ │
+│  │ └─────────────────────────────────────────────────────┤ │
+│  └────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+              │                               │
+              │ TGW Attachment                │ TGW Attachment
+              │ (Propagated)                  │ (Propagated)
+              │                               │
+    ┌─────────▼──────────┐        ┌──────────▼──────────┐
+    │ Aggregator Spoke   │        │   Audit Spoke       │
+    │ Account            │        │   Account           │
+    │                    │        │                     │
+    │ VPC: 10.1.0.0/16  │        │ VPC: 10.2.0.0/16    │
+    │ ┌────────────────┐ │        │ ┌────────────────┐  │
+    │ │ App Subnets:   │ │        │ │ App Subnets:   │  │
+    │ │ 10.1.1.0/24    │ │        │ │ 10.2.1.0/24    │  │
+    │ │ 10.1.2.0/24    │ │        │ │ 10.2.2.0/24    │  │
+    │ │                │ │        │ │                │  │
+    │ │ IGW Routes to  │ │        │ │ IGW Routes to  │  │
+    │ │ SSM endpoints  │ │        │ │ SSM endpoints  │  │
+    │ │                │ │        │ │                │  │
+    │ │ Test EC2       │ │        │ │ Test EC2       │  │
+    │ └────────────────┘ │        │ └────────────────┘  │
+    └────────────────────┘        └─────────────────────┘
+```
+
+## Account Structure
+
+| Account Name | Account ID | Purpose | Profile | Terraform Stack |
+|---|---|---|---|---|
+| Network Hub | *(from your organization)* | Transit Gateway hub, RAM sharing, shared services | `network-hub-admin` | `terraform/network-hub/` |
+| Aggregator | *(from your organization)* | Spoke 1 (aggregator/logging workloads) | `aggregator-admin` | `terraform/aggregator-account/` |
+| Audit | *(from your organization)* | Spoke 2 (audit/compliance workloads) | `audit-admin` | `terraform/audit-account/` |
+
+## Directory Structure
+
+```
+terraform/
+├── network-hub/
+│   ├── main.tf (VPC, core resources)
+│   ├── transit-gateway.tf (TGW definition, explicit route tables)
+│   ├── spoke-routing.tf (TGW attachment associations & propagations)
+│   ├── spoke-attachment-tags.tf (Tags TGW attachments from hub account)
+│   ├── ram-resource-share.tf (Shares TGW with AWS Organization)
+│   ├── providers.tf (AWS provider configuration)
+│   ├── backend.tf (S3 remote state configuration)
+│   ├── versions.tf (Terraform & provider versions)
+│   ├── variables.tf (Input variables)
+│   ├── outputs.tf (Exports TGW IDs for spoke remote state)
+│   └── outputs.tf
+│
+├── aggregator-account/
+│   ├── main.tf (VPC, subnets, route tables)
+│   ├── test-instance.tf (Test EC2, IGW, app subnet routing)
+│   ├── providers.tf
+│   ├── backend.tf
+│   ├── versions.tf
+│   ├── variables.tf
+│   └── outputs.tf (Exports instance ID, IPs, subnet IDs)
+│
+└── audit-account/
+    ├── main.tf (VPC, subnets, route tables)
+    ├── test-instance.tf (Test EC2, IGW, app subnet routing)
+    ├── providers.tf
+    ├── backend.tf
+    ├── versions.tf
+    ├── variables.tf
+    └── outputs.tf
+
+.github/workflows/
+├── terraform-spoke-template.yml (Reusable workflow for all spoke deployments)
+├── terraform-aggregator-account.yml (Wrapper calling reusable template)
+└── terraform-audit-account.yml (Wrapper calling reusable template)
+```
+
+## AWS CLI Profile Configuration
+
+Set up SSO profiles in `~/.aws/config`:
+
+```
+[sso-session my-sso-session]
+sso_start_url = https://<your-sso-portal>.awsapps.com/start/
+sso_region = us-east-1
+sso_registration_scopes = sso:account:access
+
+[profile network-hub-admin]
+sso_session = my-sso-session
+sso_account_id = <network-hub-account-id>
+sso_role_name = AWSAdministratorAccess
+region = us-east-1
+
+[profile aggregator-admin]
+sso_session = my-sso-session
+sso_account_id = <aggregator-account-id>
+sso_role_name = AWSAdministratorAccess
+region = us-east-1
+
+[profile audit-admin]
+sso_session = my-sso-session
+sso_account_id = <audit-account-id>
+sso_role_name = AWSAdministratorAccess
+region = us-east-1
+```
+
+**Install Session Manager Plugin (required for SSM access):**
+
+```bash
+# macOS
+brew install --cask session-manager-plugin
+
+# Ubuntu/Debian
+curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+sudo dpkg -i session-manager-plugin.deb
+```
+
+## Network Routing
+
+### Transit Gateway Routes
+
+The TGW explicitly routes between spokes using a dedicated route table (created by Terraform, ID available via `terraform output` from the `network-hub` stack):
+
+| Destination | Target | Origin | Status |
+|---|---|---|---|
+| `var.aggregator_vpc_cidr` | Aggregator attachment | Propagation | Active |
+| `var.audit_vpc_cidr` | Audit attachment | Propagation | Active |
+| 10.0.0.0/8 | TGW (RFC1918 via TGW) | Manual route | Active |
+| 172.16.0.0/12 | TGW (RFC1918 via TGW) | Manual route | Active |
+| 192.168.0.0/16 | TGW (RFC1918 via TGW) | Manual route | Active |
+
+### Spoke Subnet Routing
+
+Each spoke's app subnet route table includes:
+
+| Destination | Target | Purpose |
+|---|---|---|
+| 10.0.0.0/8 | TGW | Reach other spokes & hub via RFC1918 |
+| 172.16.0.0/12 | TGW | Reach RFC1918 networks |
+| 192.168.0.0/16 | TGW | Reach RFC1918 networks |
+| 0.0.0.0/0 | IGW | Internet access (required for SSM agent to reach AWS endpoints) |
+
+## Access Patterns
+
+### Option 1: AWS Systems Manager (Recommended for headless instances)
+
+```bash
+# Look up instance ID from Terraform outputs
+cd terraform/aggregator-account && terraform output test_instance_id
+cd terraform/audit-account     && terraform output test_instance_id
+
+# Connect to a spoke instance
+aws ssm start-session --target <instance-id> --region us-east-1 --profile aggregator-admin
+
+# From SSM session, test cross-spoke connectivity
+ping <other-spoke-instance-private-ip>
+```
+
+### Option 2: SSH (Requires EC2 Instance Connect or SSH key management)
+
+```bash
+# Get instance public IP from Terraform outputs
+cd terraform/aggregator-account && terraform output test_instance_public_ip
+
+# Connect via SSH
+ssh -i ~/.ssh/id_rsa ec2-user@<instance-public-ip>
+
+# Test connectivity to the other spoke
+ping -c 5 <other-spoke-instance-private-ip>
+```
+
+### Option 3: EC2 Instance Connect (Temporary SSH key generation)
+
+```bash
+# Generate temporary SSH access
+aws ec2-instance-connect send-ssh-public-key \
+  --instance-id <instance-id> \
+  --instance-os-user ec2-user \
+  --region us-east-1 \
+  --profile aggregator-admin \
+  --ssh-public-key "$(cat ~/.ssh/id_rsa.pub)"
+```
+
+## Connectivity Validation
+
+### Verify TGW Routes
+
+First, get the TGW spoke route table ID from Terraform outputs:
+```bash
+cd terraform/network-hub && terraform output transit_gateway_spoke_route_table_id
+```
+
+```bash
+# Check TGW route table
+aws ec2 search-transit-gateway-routes \
+  --transit-gateway-route-table-id <tgw-spoke-route-table-id> \
+  --region us-east-1 \
+  --profile network-hub-admin \
+  --filters "Name=state,Values=active"
+
+# Check TGW attachment associations
+aws ec2 get-transit-gateway-route-table-associations \
+  --transit-gateway-route-table-id <tgw-spoke-route-table-id> \
+  --region us-east-1 \
+  --profile network-hub-admin
+```
+
+### Test Spoke-to-Spoke Connectivity
+
+Get private IPs from Terraform outputs, then from within each instance:
+```bash
+# From aggregator instance — ping audit
+ping -c 5 <audit-instance-private-ip>
+
+# From audit instance — ping aggregator
+ping -c 5 <aggregator-instance-private-ip>
+```
+
+**Expected result:** 5/5 packets transmitted and received, 0% loss, latency ~0.5ms
+
+## Onboarding a New Spoke Account
+
+### Prerequisites
+1. AWS account exists and is part of the organization
+2. Account added to RAM resource share for TGW access
+3. AWS CLI profile created for the new spoke account
+
+### Steps
+
+1. **Create spoke account Terraform stack:**
+
+   ```bash
+   # Copy aggregator-account template
+   cp -r terraform/aggregator-account terraform/new-spoke-account
+   ```
+
+2. **Update variables:**
+
+   Edit `terraform/new-spoke-account/variables.tf`:
+   ```hcl
+   variable "account_name" {
+     default = "new-spoke-account"
+   }
+
+   variable "vpc_name" {
+     default = "new-spoke-vpc"
+   }
+   ```
+
+3. **Update providers:**
+
+   Edit `terraform/new-spoke-account/providers.tf`:
+   ```hcl
+   provider "aws" {
+     alias   = "spoke"
+     profile = "new-spoke-admin"  # Your new profile name
+     # ... rest of config
+   }
+   ```
+
+4. **Create GitHub Actions workflow:**
+
+   Copy `.github/workflows/terraform-aggregator-account.yml` and update:
+   ```yaml
+   - name: Terrafor New Spoke
+     uses: ./.github/workflows/terraform-spoke-template.yml
+     with:
+       spoke_name: "new-spoke-account"
+       working_directory: "terraform/new-spoke-account"
+       # ... other inputs
+   ```
+
+5. **Add TGW attachment to hub routing:**
+
+   Update `terraform/network-hub/spoke-routing.tf` with new attachment association/propagation (repeat pattern from existing spokes)
+
+6. **Deploy:**
+
+   ```bash
+   cd terraform/new-spoke-account
+   terraform init
+   terraform plan
+   terraform apply
+   ```
+
+7. **Validate connectivity:**
+
+   ```bash
+   # From new spoke instance, ping existing spokes (IPs from terraform output)
+   ping <aggregator-instance-private-ip>
+   ping <audit-instance-private-ip>
+   ```
+
+## Development & Maintenance
+
+### Terraform Workflow
+
+Always run `terraform fmt` before committing:
+
+```bash
+terraform fmt -recursive terraform/
+```
+
+Typical development flow:
+
+```bash
+# 1. Make changes to .tf files
+# 2. Format
+terraform fmt -recursive terraform/
+
+# 3. Plan specific stack
+cd terraform/<stack-name>
+terraform plan -out=tfplan
+
+# 4. Review plan, then apply
+terraform apply tfplan
+
+# 5. Commit and push
+git add .
+git commit -m "fix: describe your change"
+git push origin <branch-name>
+
+# 6. Create PR for review
+# 7. Merge to main (triggers GitHub Actions apply)
+```
+
+### CI/CD Workflow
+
+GitHub Actions workflows trigger on:
+- **PR events** (feature branches): `terraform plan` only (no apply)
+- **Merge to main**: `terraform plan` + approval gate + `terraform apply`
+
+Workflows require:
+- `id-token: write` permission for OIDC authentication
+- Secrets for each spoke account's IAM role ARN
+
+### Troubleshooting
+
+**Instance not appearing in SSM Fleet Manager:**
+- Ensure IAM role has `AmazonSSMManagedInstanceCore` policy
+- Ensure instance has outbound internet access (IGW + default route)
+- Wait 1-2 minutes for SSM agent to register
+
+**TGW attachment not propagating routes:**
+- Verify attachment is in the correct TGW route table (not default)
+- Check route table association/propagation status via AWS Console or CLI
+- Verify network ACLs allow traffic on TGW attachment subnets
+
+**Terraform state lock errors:**
+- Check S3 bucket for stale lock files: `aws s3 ls s3://<terraform-state-bucket>/`
+- If needed, force unlock (use with caution): `terraform force-unlock <LOCK_ID>`
+
+**OIDC Token Errors in GitHub Actions:**
+- Verify workflows have `permissions: { id-token: write, contents: read }`
+- Verify IAM role trust policy includes GitHub OIDC provider
+- Check secrets contain correct role ARNs for each account
+
+## Next Steps
+
+- [ ] Add VPC Flow Logs for traffic analysis
+- [ ] Enable AWS Config for compliance monitoring
+- [ ] Deploy private subnets with NAT Gateways
+- [ ] Implement DNS resolution (Route 53 Private Hosted Zones)
+- [ ] Add shared services VPC for logging, security tools
+- [ ] Configure GuardDuty and Security Hub
+- [ ] Tag resources for cost allocation and chargeback
+
+---
