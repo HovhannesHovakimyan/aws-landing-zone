@@ -550,7 +550,7 @@ ping -c 5 <aggregator-instance-private-ip>
    variable "account_name" {
      default = "new-spoke-account"
    }
-   
+
    variable "vpc_name" {
      default = "new-spoke-vpc"
    }
