@@ -298,18 +298,17 @@ This section documents the Transit Gateway (TGW) hub-and-spoke network topology 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Network Hub Account                      │
-│                      (082787299790)                         │
 │                                                              │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │ VPC: 10.0.0.0/16                                       │ │
-│  │  ├─ Subnets: 10.0.1.0/24, 10.0.2.0/24 (nat/shared)    │ │
+│  │ VPC: <hub-vpc-cidr>                                    │ │
+│  │  ├─ Subnets: <hub-subnet-cidrs>                        │ │
 │  │  └─ NAT Gateways for outbound traffic                  │ │
 │  │                                                         │ │
 │  │ ┌─────────────────────────────────────────────────────┤ │
-│  │ │ Transit Gateway (TGW): tgw-0bce03b7b87987017       │ │
+│  │ │ Transit Gateway (TGW)                               │ │
 │  │ │  • Default route table association: DISABLED        │ │
 │  │ │  • Default route table propagation: DISABLED        │ │
-│  │ │  • Explicit route table: tgw-rtb-0c6f5fd1cd16fd084 │ │
+│  │ │  • Explicit spoke route table                       │ │
 │  │ │  • Shared with AWS Organization via RAM             │ │
 │  │ └─────────────────────────────────────────────────────┤ │
 │  └────────────────────────────────────────────────────────┘ │
@@ -321,31 +320,28 @@ This section documents the Transit Gateway (TGW) hub-and-spoke network topology 
     ┌─────────▼──────────┐        ┌──────────▼──────────┐
     │ Aggregator Spoke   │        │   Audit Spoke       │
     │ Account            │        │   Account           │
-    │ (334296258026)     │        │   (612827969911)    │
-    │                    │        │                    │
-    │ VPC: 10.1.0.0/16  │        │ VPC: 10.2.0.0/16   │
-    │ ┌────────────────┐ │        │ ┌────────────────┐ │
-    │ │ App Subnets:   │ │        │ │ App Subnets:   │ │
-    │ │ 10.1.1.0/24    │ │        │ │ 10.2.1.0/24    │ │
-    │ │ 10.1.2.0/24    │ │        │ │ 10.2.2.0/24    │ │
-    │ │                │ │        │ │                │ │
-    │ │ IGW Routes to  │ │        │ │ IGW Routes to  │ │
-    │ │ SSM endpoints  │ │        │ │ SSM endpoints  │ │
-    │ │                │ │        │ │                │ │
-    │ │ Test EC2:      │ │        │ │ Test EC2:      │ │
-    │ │ i-0de98346...  │ │        │ │ i-0781987e...  │ │
-    │ │ 10.1.1.249     │ │        │ │ 10.2.1.169     │ │
-    │ └────────────────┘ │        │ └────────────────┘ │
-    └────────────────────┘        └────────────────────┘
+    │                    │        │                     │
+    │ VPC: 10.1.0.0/16  │        │ VPC: 10.2.0.0/16    │
+    │ ┌────────────────┐ │        │ ┌────────────────┐  │
+    │ │ App Subnets:   │ │        │ │ App Subnets:   │  │
+    │ │ 10.1.1.0/24    │ │        │ │ 10.2.1.0/24    │  │
+    │ │ 10.1.2.0/24    │ │        │ │ 10.2.2.0/24    │  │
+    │ │                │ │        │ │                │  │
+    │ │ IGW Routes to  │ │        │ │ IGW Routes to  │  │
+    │ │ SSM endpoints  │ │        │ │ SSM endpoints  │  │
+    │ │                │ │        │ │                │  │
+    │ │ Test EC2       │ │        │ │ Test EC2       │  │
+    │ └────────────────┘ │        │ └────────────────┘  │
+    └────────────────────┘        └─────────────────────┘
 ```
 
 ## Account Structure
 
 | Account Name | Account ID | Purpose | Profile | Terraform Stack |
 |---|---|---|---|---|
-| Network Hub | 082787299790 | Transit Gateway hub, RAM sharing, shared services | `network-hub-admin` | `terraform/network-hub/` |
-| Aggregator | 334296258026 | Spoke 1 (aggregator/logging workloads) | `aggregator-admin` | `terraform/aggregator-account/` |
-| Audit | 612827969911 | Spoke 2 (audit/compliance workloads) | `audit-admin` | `terraform/audit-account/` |
+| Network Hub | *(from your organization)* | Transit Gateway hub, RAM sharing, shared services | `network-hub-admin` | `terraform/network-hub/` |
+| Aggregator | *(from your organization)* | Spoke 1 (aggregator/logging workloads) | `aggregator-admin` | `terraform/aggregator-account/` |
+| Audit | *(from your organization)* | Spoke 2 (audit/compliance workloads) | `audit-admin` | `terraform/audit-account/` |
 
 ## Directory Structure
 
@@ -394,25 +390,25 @@ Set up SSO profiles in `~/.aws/config`:
 
 ```
 [sso-session my-sso-session]
-sso_start_url = https://d-90660ad893.awsapps.com/start/
+sso_start_url = https://<your-sso-portal>.awsapps.com/start/
 sso_region = us-east-1
 sso_registration_scopes = sso:account:access
 
 [profile network-hub-admin]
 sso_session = my-sso-session
-sso_account_id = 082787299790
+sso_account_id = <network-hub-account-id>
 sso_role_name = AWSAdministratorAccess
 region = us-east-1
 
 [profile aggregator-admin]
 sso_session = my-sso-session
-sso_account_id = 334296258026
+sso_account_id = <aggregator-account-id>
 sso_role_name = AWSAdministratorAccess
 region = us-east-1
 
 [profile audit-admin]
 sso_session = my-sso-session
-sso_account_id = 612827969911
+sso_account_id = <audit-account-id>
 sso_role_name = AWSAdministratorAccess
 region = us-east-1
 ```
@@ -432,12 +428,12 @@ sudo dpkg -i session-manager-plugin.deb
 
 ### Transit Gateway Routes
 
-The TGW explicitly routes between spokes using a dedicated route table (`tgw-rtb-0c6f5fd1cd16fd084`):
+The TGW explicitly routes between spokes using a dedicated route table (created by Terraform, ID available via `terraform output` from the `network-hub` stack):
 
 | Destination | Target | Origin | Status |
 |---|---|---|---|
-| 10.1.0.0/16 | Aggregator attachment | Propagation | Active |
-| 10.2.0.0/16 | Audit attachment | Propagation | Active |
+| `var.aggregator_vpc_cidr` | Aggregator attachment | Propagation | Active |
+| `var.audit_vpc_cidr` | Audit attachment | Propagation | Active |
 | 10.0.0.0/8 | TGW (RFC1918 via TGW) | Manual route | Active |
 | 172.16.0.0/12 | TGW (RFC1918 via TGW) | Manual route | Active |
 | 192.168.0.0/16 | TGW (RFC1918 via TGW) | Manual route | Active |
@@ -458,29 +454,28 @@ Each spoke's app subnet route table includes:
 ### Option 1: AWS Systems Manager (Recommended for headless instances)
 
 ```bash
-# From aggregator spoke
-aws ssm start-session --target i-0de98346eb255410d --region us-east-1 --profile aggregator-admin
+# Look up instance ID from Terraform outputs
+cd terraform/aggregator-account && terraform output test_instance_id
+cd terraform/audit-account     && terraform output test_instance_id
 
-# From audit spoke
-aws ssm start-session --target i-0781987e5832fded0 --region us-east-1 --profile audit-admin
+# Connect to a spoke instance
+aws ssm start-session --target <instance-id> --region us-east-1 --profile aggregator-admin
 
-# From SSM session, test connectivity
-ping 10.1.1.249  # Ping the other spoke
+# From SSM session, test cross-spoke connectivity
+ping <other-spoke-instance-private-ip>
 ```
 
 ### Option 2: SSH (Requires EC2 Instance Connect or SSH key management)
 
 ```bash
-# Get instance public IP
-aws ec2 describe-instances --instance-ids i-0de98346eb255410d \
-  --region us-east-1 --profile aggregator-admin \
-  --query 'Reservations[0].Instances[0].PublicIpAddress' --output text
+# Get instance public IP from Terraform outputs
+cd terraform/aggregator-account && terraform output test_instance_public_ip
 
 # Connect via SSH
-ssh -i ~/.ssh/id_rsa ec2-user@44.213.89.38
+ssh -i ~/.ssh/id_rsa ec2-user@<instance-public-ip>
 
-# Test connectivity to audit spoke
-ping -c 5 10.2.1.169
+# Test connectivity to the other spoke
+ping -c 5 <other-spoke-instance-private-ip>
 ```
 
 ### Option 3: EC2 Instance Connect (Temporary SSH key generation)
@@ -488,7 +483,7 @@ ping -c 5 10.2.1.169
 ```bash
 # Generate temporary SSH access
 aws ec2-instance-connect send-ssh-public-key \
-  --instance-id i-0de98346eb255410d \
+  --instance-id <instance-id> \
   --instance-os-user ec2-user \
   --region us-east-1 \
   --profile aggregator-admin \
@@ -499,31 +494,35 @@ aws ec2-instance-connect send-ssh-public-key \
 
 ### Verify TGW Routes
 
+First, get the TGW spoke route table ID from Terraform outputs:
+```bash
+cd terraform/network-hub && terraform output transit_gateway_spoke_route_table_id
+```
+
 ```bash
 # Check TGW route table
 aws ec2 search-transit-gateway-routes \
-  --transit-gateway-route-table-id tgw-rtb-0c6f5fd1cd16fd084 \
+  --transit-gateway-route-table-id <tgw-spoke-route-table-id> \
   --region us-east-1 \
   --profile network-hub-admin \
   --filters "Name=state,Values=active"
 
 # Check TGW attachment associations
 aws ec2 get-transit-gateway-route-table-associations \
-  --transit-gateway-route-table-id tgw-rtb-0c6f5fd1cd16fd084 \
+  --transit-gateway-route-table-id <tgw-spoke-route-table-id> \
   --region us-east-1 \
   --profile network-hub-admin
 ```
 
 ### Test Spoke-to-Spoke Connectivity
 
-From aggregator instance:
+Get private IPs from Terraform outputs, then from within each instance:
 ```bash
-ping -c 5 10.2.1.169  # Audit spoke instance
-```
+# From aggregator instance — ping audit
+ping -c 5 <audit-instance-private-ip>
 
-From audit instance:
-```bash
-ping -c 5 10.1.1.249  # Aggregator spoke instance
+# From audit instance — ping aggregator
+ping -c 5 <aggregator-instance-private-ip>
 ```
 
 **Expected result:** 5/5 packets transmitted and received, 0% loss, latency ~0.5ms
@@ -596,9 +595,9 @@ ping -c 5 10.1.1.249  # Aggregator spoke instance
 7. **Validate connectivity:**
 
    ```bash
-   # From new spoke instance, ping existing spokes
-   ping 10.1.1.249  # Aggregator
-   ping 10.2.1.169  # Audit
+   # From new spoke instance, ping existing spokes (IPs from terraform output)
+   ping <aggregator-instance-private-ip>
+   ping <audit-instance-private-ip>
    ```
 
 ## Development & Maintenance
@@ -657,7 +656,7 @@ Workflows require:
 - Verify network ACLs allow traffic on TGW attachment subnets
 
 **Terraform state lock errors:**
-- Check S3 bucket for stale lock files: `aws s3 ls s3://terraform-network-hub-082787299790/`
+- Check S3 bucket for stale lock files: `aws s3 ls s3://<terraform-state-bucket>/`
 - If needed, force unlock (use with caution): `terraform force-unlock <LOCK_ID>`
 
 **OIDC Token Errors in GitHub Actions:**
