@@ -1,3 +1,4 @@
+/*
 # AWS EC2 Transit Gateway for Hub-and-Spoke Network Architecture
 resource "aws_ec2_transit_gateway" "hub" {
   description                     = "Transit Gateway for Hub-and-Spoke network architecture"
@@ -23,3 +24,4 @@ resource "aws_ec2_transit_gateway_route_table" "spoke" {
     Name = "hub-spoke-route-table"
   }
 }
+*/

@@ -1,3 +1,4 @@
+/*
 # AWS RAM Resource Share for sharing Transit Gateway with Organization
 resource "aws_ram_resource_share" "tgw_share" {
   name                      = "hub-tgw-resource-share"
@@ -20,3 +21,4 @@ resource "aws_ram_principal_association" "organization" {
   principal          = trimspace(var.organization_arn)
   resource_share_arn = aws_ram_resource_share.tgw_share.arn
 }
+*/

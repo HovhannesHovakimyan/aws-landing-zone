@@ -1,3 +1,4 @@
+/*
 # Cross-account S3 access policy for spoke Terraform OIDC roles to manage shared Terraform state.
 
 data "aws_s3_bucket" "terraform_state" {
@@ -109,3 +110,4 @@ resource "aws_s3_bucket_policy" "cross_account_access" {
   bucket = data.aws_s3_bucket.terraform_state.id
   policy = data.aws_iam_policy_document.cross_account_s3_access.json
 }
+*/

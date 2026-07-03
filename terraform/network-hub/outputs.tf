@@ -1,3 +1,4 @@
+/*
 # Transit Gateway Outputs
 output "transit_gateway_id" {
   description = "ID of the Transit Gateway"
@@ -45,3 +46,4 @@ output "organization_arn" {
   description = "Organization ARN with which Transit Gateway is shared"
   value       = var.organization_arn
 }
+*/

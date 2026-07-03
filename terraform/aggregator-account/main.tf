@@ -16,6 +16,7 @@ data "terraform_remote_state" "network_hub" {
   }
 }
 
+/*
 # ── Spoke VPC ─────────────────────────────────────────────────────────────────
 
 resource "aws_vpc" "spoke" {
@@ -84,3 +85,4 @@ resource "aws_route" "spoke_to_tgw" {
 
   depends_on = [aws_ec2_transit_gateway_vpc_attachment.spoke]
 }
+*/

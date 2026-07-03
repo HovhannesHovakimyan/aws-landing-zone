@@ -2,6 +2,7 @@
 # This instance is placed in an app-tier subnet that routes to the TGW for
 # cross-spoke connectivity testing.
 
+/*
 # ── App-tier subnets ──────────────────────────────────────────────────────────
 
 resource "aws_subnet" "app" {
@@ -169,3 +170,4 @@ resource "aws_instance" "test" {
     Name = "${var.vpc_name}-test-instance"
   }
 }
+*/
