@@ -94,7 +94,7 @@ jobs:
           if-no-files-found: error
 
   terraform-apply:
-    name: Terraform Apply
+    name: Terraform Apply (${{ github.workflow }})
     if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
     needs: terraform-plan
     runs-on: ubuntu-latest
