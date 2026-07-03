@@ -4,38 +4,39 @@
 
 # ── Aggregator spoke ──────────────────────────────────────────────────────────
 
-data "terraform_remote_state" "aggregator" {
-  backend = "s3"
-  config = {
-    bucket  = "terraform-network-hub-082787299790"
-    key     = "terraform-aggregator-account.tfstate"
-    region  = "us-east-1"
-    encrypt = true
-  }
-}
+# data "terraform_remote_state" "aggregator" {
+#   backend = "s3"
+#   config = {
+#     bucket  = "terraform-network-hub-082787299790"
+#     key     = "terraform-aggregator-account.tfstate"
+#     region  = "us-east-1"
+#     encrypt = true
+#   }
+# }
 
-resource "aws_ec2_tag" "aggregator_attachment_name" {
-  resource_id = data.terraform_remote_state.aggregator.outputs.transit_gateway_attachment_id
-  key         = "Name"
-  # IMPORTANT: Must match var.attachment_name in terraform/aggregator-account/variables.tf
-  value = "aggregator-to-hub-tgw"
-}
+# resource "aws_ec2_tag" "aggregator_attachment_name" {
+#   resource_id = data.terraform_remote_state.aggregator.outputs.transit_gateway_attachment_id
+#   key         = "Name"
+#   # IMPORTANT: Must match var.attachment_name in terraform/aggregator-account/variables.tf
+#   value = "aggregator-to-hub-tgw"
+# }
 
 # ── Audit spoke ───────────────────────────────────────────────────────────────
 
-data "terraform_remote_state" "audit" {
-  backend = "s3"
-  config = {
-    bucket  = "terraform-network-hub-082787299790"
-    key     = "terraform-audit-account.tfstate"
-    region  = "us-east-1"
-    encrypt = true
-  }
-}
+# data "terraform_remote_state" "audit" {
+#   backend = "s3"
+#   config = {
+#     bucket  = "terraform-network-hub-082787299790"
+#     key     = "terraform-audit-account.tfstate"
+#     region  = "us-east-1"
+#     encrypt = true
+#   }
+# }
 
-resource "aws_ec2_tag" "audit_attachment_name" {
-  resource_id = data.terraform_remote_state.audit.outputs.transit_gateway_attachment_id
-  key         = "Name"
-  # IMPORTANT: Must match var.attachment_name in terraform/audit-account/variables.tf
-  value = "audit-to-hub-tgw"
-}
+# resource "aws_ec2_tag" "audit_attachment_name" {
+#   resource_id = data.terraform_remote_state.audit.outputs.transit_gateway_attachment_id
+#   key         = "Name"
+#   # IMPORTANT: Must match var.attachment_name in terraform/audit-account/variables.tf
+#   value = "audit-to-hub-tgw"
+# }
+

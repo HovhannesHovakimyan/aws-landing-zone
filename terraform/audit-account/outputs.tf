@@ -1,3 +1,4 @@
+/*
 output "vpc_id" {
   description = "ID of the spoke VPC"
   value       = aws_vpc.spoke.id
@@ -49,3 +50,4 @@ output "app_subnet_ids" {
   description = "IDs of the app-tier subnets"
   value       = aws_subnet.app[*].id
 }
+*/
